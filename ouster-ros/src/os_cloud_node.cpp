@@ -60,8 +60,11 @@ class OusterCloud : public OusterProcessingNodeBase {
         lidar_frame = declare_parameter("lidar_frame", "lidar_frame");
         imu_frame = declare_parameter("imu_frame", "os_imu");
         std::string timestamp_mode = declare_parameter("timestamp_mode", "");
+        ptp_utc_tai_offset_secs = declare_parameter("ptp_utc_tai_offset_secs", 0);
 
         use_ros_time = timestamp_mode == "TIME_FROM_ROS_TIME";
+        use_ptp_utc_tai_offset = (timestamp_mode == "TIME_FROM_PTP_1588")
+                                 && (ptp_utc_tai_offset_secs != 0);
     }
 
     void create_lidarscan_objects() {
@@ -145,6 +148,9 @@ class OusterCloud : public OusterProcessingNodeBase {
                                 [](uint64_t h) { return h != 0; });
         if (idx == ts_v.data() + ts_v.size()) return;
         auto scan_ts = std::chrono::nanoseconds{ts_v(idx - ts_v.data())};
+        if (use_ptp_utc_tai_offset) {
+            scan_ts = apply_ptp_utc_tai_offset(scan_ts);
+        }
         convert_scan_to_pointcloud_publish(scan_ts, to_ros_time(scan_ts));
     }
 
@@ -166,6 +172,14 @@ class OusterCloud : public OusterProcessingNodeBase {
         auto msg_ts = use_ros_time
                           ? rclcpp::Clock(RCL_ROS_TIME).now()
                           : to_ros_time(pf.imu_gyro_ts(packet->buf.data()));
+
+        if (use_ptp_utc_tai_offset) {
+            msg_ts = to_ros_time(
+                apply_ptp_utc_tai_offset(
+                    std::chrono::nanoseconds(pf.imu_gyro_ts(packet->buf.data()))
+                    ));
+        }
+
         auto imu_msg =
             ouster_ros::packet_to_imu_msg(*packet, msg_ts, imu_frame, pf);
         imu_pub->publish(imu_msg);
@@ -179,6 +193,15 @@ class OusterCloud : public OusterProcessingNodeBase {
 
     static inline rclcpp::Time to_ros_time(std::chrono::nanoseconds ts) {
         return to_ros_time(ts.count());
+    }
+
+    inline std::chrono::nanoseconds apply_ptp_utc_tai_offset(std::chrono::nanoseconds ts) {
+        auto secs = ts.count() / 1000000000u;
+        if (secs < std::abs(ptp_utc_tai_offset_secs)) {
+            return ts;
+        }
+        ts += std::chrono::seconds(ptp_utc_tai_offset_secs);
+        return ts;
     }
 
    private:
@@ -206,6 +229,9 @@ class OusterCloud : public OusterProcessingNodeBase {
     tf2_ros::TransformBroadcaster tf_bcast;
 
     bool use_ros_time;
+
+    int ptp_utc_tai_offset_secs;
+    bool use_ptp_utc_tai_offset;
 };
 
 }  // namespace ouster_ros
