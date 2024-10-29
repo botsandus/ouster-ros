@@ -103,6 +103,10 @@ class PointCloudProcessor {
 
         for (const auto& point : pcl_cloud.points)
         {
+            if(std::isnan(point.x) || std::isnan(point.y) || std::isnan(point.z))
+            {
+                continue;
+            }
             *iter_x = point.x;
             *iter_y = point.y;
             *iter_z = point.z;
