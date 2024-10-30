@@ -83,9 +83,9 @@ class PointCloudProcessor {
 
         cloud_msg.header.frame_id = pcl_cloud.header.frame_id;
         cloud_msg.header.stamp = rclcpp::Time(pcl_cloud.header.stamp * 1000ull); // Convert from us to ns
-        cloud_msg.height = pcl_cloud.height;
-        cloud_msg.width  = pcl_cloud.width;
-        cloud_msg.is_dense   = pcl_cloud.is_dense;
+        cloud_msg.height = 1 ;
+        cloud_msg.width = pcl_cloud.width * pcl_cloud.height;
+        cloud_msg.is_dense = true;
         cloud_msg.is_bigendian = false;
 
         modifier.setPointCloud2Fields( 4,
@@ -93,16 +93,20 @@ class PointCloudProcessor {
             "y", 1, sensor_msgs::msg::PointField::FLOAT32,
             "z", 1, sensor_msgs::msg::PointField::FLOAT32,
             "intensity", 1, sensor_msgs::msg::PointField::FLOAT32);
-
+        
         modifier.resize(pcl_cloud.size());
 
         sensor_msgs::PointCloud2Iterator<float> iter_x(cloud_msg, "x");
         sensor_msgs::PointCloud2Iterator<float> iter_y(cloud_msg, "y");
         sensor_msgs::PointCloud2Iterator<float> iter_z(cloud_msg, "z");
         sensor_msgs::PointCloud2Iterator<float> iter_intensity(cloud_msg, "intensity");
-
+        int points_count = 0;
         for (const auto& point : pcl_cloud.points)
         {
+            if(std::isnan(point.x) || std::isnan(point.y) || std::isnan(point.z))
+            {
+                continue;
+            }
             *iter_x = point.x;
             *iter_y = point.y;
             *iter_z = point.z;
@@ -112,7 +116,9 @@ class PointCloudProcessor {
             ++iter_y;
             ++iter_z;
             ++iter_intensity;
+            ++points_count;
         }
+        modifier.resize(points_count);
     }
 
     void process(const ouster::LidarScan& lidar_scan, uint64_t scan_ts,

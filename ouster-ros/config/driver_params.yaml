@@ -85,4 +85,4 @@ ouster/os_driver:
     # - ouster_ros/os_point.h
     # - ouster_ros/sensor_point_types.h
     # - ouster_ros/common_point_types.h.
-    point_type: original
+    point_type: xyzi
