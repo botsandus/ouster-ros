@@ -4,10 +4,60 @@ Changelog
 
 [unreleased]
 ============
+* [BUGFIX]: correctly align timestamps to the generated point cloud.
+* [BUGFIX]: NEAR_IR data is not populated with data for organized point clouds that have no range.
+* Add support to enable **loop** for pcap replay + other replay config.
+* Add a new launch file parameter ``pub_static_tf`` that allows users to turn off the braodcast
+  of sensor TF transforms.
+* Introduce a new topic ``/ouster/telemetry`` that publishes ``ouster_ros::Telemetry`` messages,
+  the topic can be turned on/off by including the token ``TLM`` in the flag ``proc_mask`` launch arg.
+* Add a new launch file parameter ``min_scan_valid_columns_ratio`` to allow users to set the minimum
+  ratio of valid columns in a scan for it to be processed. Default value is ``0.0``.
+* Update where ouster-ros and ouster_client include directories get installed so that those headers can be included externally.
+
+ouster_ros v0.13.2
+==================
+* [BUGFIX]: Make sure to initialize the sensor with launch file parameters.
+* [BUGFIX]: ``os_driver`` failed when RAW option is used.
+
+
+ouster_ros v0.13.0
+==================
 * [BUGFIX]: LaserScan is not properly aligned with generated point cloud
   * address an issue where LaserScan appeared different on FW prior to 2.4
 * [BUGFIX]: LaserScan does not work when using dual mode
 * [BUGFIX]: ROS2 crashes when standby mode is set and then set to normal
+* [BUGFIX]: Implement lock free ring buffer with throttling to reduce partial frames
+* add support for FUSA udp profile ``FUSA_RNG15_RFL8_NIR8_DUAL``.
+* [BREAKING]: Set xyz values of individual points in the PointCloud to NaNs when range is zero.
+* Added support to replay pcap format direclty from ouster-ros. The feature needs to be enabled
+  explicitly by turning on the ``BUILD_PCAP`` cmake option and having ``libpcap-dev`` installed.
+* [BREAKING] Added new launch files args ``azimuth_window_start`` and ``azimuth_window_end`` to
+  allow users to set LIDAR FOV on startup. The new options will reset the current azimuth window
+  to the default [0, 360] azimuth if not configured.
+* Added a new launch ``persist_config`` option to request the sensor persist the current config
+* Added a new ``loop`` option to the ``replay.launch.xml`` file.
+* Added support for automatic sensor reconnection. Consult ``attempt_reconnect`` launch file arg
+  documentation and the associated params to enable. Known Issues:
+  - Doesn't handle detect and handle invalid configurations
+* Added an automatic start mode to make it easier to start the node without using time actions.
+  - To disable set ``auto_start`` to ``false`` during launch
+* Added a new parameter ``organized`` to request publishing unorganized point cloud
+* Added a new parameter ``destagger`` to request publishing staggered point cloud
+* Added two parameters ``min_range``, ``max_range`` to limit the lidar effective range
+* Updated ouster_client to the release of ``20240425`` [v0.11.1]; changes listed below.
+
+ouster_client
+-------------
+* Added a new buffered UDP source implementation BufferedUDPSource.
+* The method version_of_string is marked as deprecated, use version_from_string
+instead.
+* Added a new method firmware_version_from_metadata which works across firmwares.
+* Added support for return order configuration parameter.
+* Added support for gyro and accelerometer FSR configuration parameters.
+* [BUGFIX] mtp_init_client throws a bad optional access.
+* [BUGFIX] properly handle 32-bit frame IDs from the
+* FUSA_RNG15_RFL8_NIR8_DUAL sensor UDP profile.
 
 
 ouster_ros v0.12.0

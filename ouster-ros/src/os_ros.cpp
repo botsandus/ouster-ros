@@ -27,6 +27,8 @@ namespace ouster_ros {
 namespace sensor = ouster::sensor;
 using namespace ouster::util;
 using ouster_sensor_msgs::msg::PacketMsg;
+using ouster_sensor_msgs::msg::Telemetry;
+using ouster::sensor::LidarPacket;
 
 
 bool is_legacy_lidar_profile(const sensor::sensor_info& info) {
@@ -37,10 +39,11 @@ bool is_legacy_lidar_profile(const sensor::sensor_info& info) {
 
 int get_n_returns(const sensor::sensor_info& info) {
     using sensor::UDPProfileLidar;
-    return info.format.udp_profile_lidar ==
-                   UDPProfileLidar::PROFILE_RNG19_RFL8_SIG16_NIR16_DUAL
-               ? 2
-               : 1;
+    if (info.format.udp_profile_lidar == UDPProfileLidar::PROFILE_RNG19_RFL8_SIG16_NIR16_DUAL ||
+        info.format.udp_profile_lidar == UDPProfileLidar::PROFILE_FUSA_RNG15_RFL8_NIR8_DUAL)
+        return 2;
+
+    return 1;
 }
 
 size_t get_beams_count(const sensor::sensor_info& info) {
@@ -209,6 +212,18 @@ sensor_msgs::msg::LaserScan lidar_scan_to_laser_scan_msg(
     }
 
     return msg;
+}
+
+Telemetry lidar_packet_to_telemetry_msg(
+    const LidarPacket& lidar_packet, const rclcpp::Time& timestamp,
+    const sensor::packet_format& pf) {
+    Telemetry telemetry;
+    telemetry.header.stamp = timestamp;
+    telemetry.countdown_thermal_shutdown = pf.countdown_thermal_shutdown(lidar_packet.buf.data());
+    telemetry.countdown_shot_limiting = pf.countdown_shot_limiting(lidar_packet.buf.data());
+    telemetry.thermal_shutdown = pf.thermal_shutdown(lidar_packet.buf.data());
+    telemetry.shot_limiting = pf.shot_limiting(lidar_packet.buf.data());
+    return telemetry;
 }
 
 }  // namespace ouster_ros
