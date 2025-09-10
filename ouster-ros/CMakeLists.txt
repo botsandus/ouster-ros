@@ -76,7 +76,7 @@ set(ouster_ros_library_deps
   tf2_eigen
 )
 
-ament_target_dependencies(ouster_ros_library
+target_link_libraries(ouster_ros_library
   ${ouster_ros_library_deps}
 )
 
@@ -102,7 +102,7 @@ function(create_ros2_component
       "OUSTER_ROS_BUILDING_DLL"
   )
 
-  ament_target_dependencies(${component_lib_name}
+  target_link_libraries(${component_lib_name}
     rclcpp
     class_loader
     rclcpp_components
@@ -195,7 +195,7 @@ if(BUILD_TESTING)
     test/point_transform_test.cpp
     test/point_cloud_compose_test.cpp
   )
-  ament_target_dependencies(${PROJECT_NAME}_test
+  target_link_libraries(${PROJECT_NAME}_test
     rclcpp
     ouster_sensor_msgs
   )
