@@ -83,6 +83,9 @@ void OusterSensor::declare_parameters() {
     declare_parameter("dormant_period_between_reconnects", 1.0);
     declare_parameter("max_failed_reconnect_attempts", INT_MAX);
     declare_parameter("auto_start", false);
+    declare_parameter("multipurpose_io_mode", "");
+    declare_parameter("sync_pulse_out_polarity", "");
+    declare_parameter("sync_pulse_out_frequency", 0);
 }
 
 bool OusterSensor::start() {
@@ -569,6 +572,38 @@ sensor::sensor_config OusterSensor::parse_config_from_ros_parameters() {
 
     config.azimuth_window = {azimuth_window_start, azimuth_window_end};
 
+    auto multipurpose_io_mode_arg =
+        get_parameter("multipurpose_io_mode").as_string();
+    if (is_arg_set(multipurpose_io_mode_arg)) {
+        config.multipurpose_io_mode =
+            sensor::multipurpose_io_mode_of_string(multipurpose_io_mode_arg);
+        if (!config.multipurpose_io_mode) {
+            auto error_msg =
+                "Invalid multipurpose_io_mode: " + multipurpose_io_mode_arg;
+            RCLCPP_FATAL_STREAM(get_logger(), error_msg);
+            throw std::runtime_error(error_msg);
+        }
+    }
+
+    auto sync_pulse_out_polarity_arg =
+        get_parameter("sync_pulse_out_polarity").as_string();
+    if (is_arg_set(sync_pulse_out_polarity_arg)) {
+        config.sync_pulse_out_polarity =
+            sensor::polarity_of_string(sync_pulse_out_polarity_arg);
+        if (!config.sync_pulse_out_polarity) {
+            auto error_msg =
+                "Invalid sync_pulse_out_polarity: " + sync_pulse_out_polarity_arg;
+            RCLCPP_FATAL_STREAM(get_logger(), error_msg);
+            throw std::runtime_error(error_msg);
+        }
+    }
+
+    auto sync_pulse_out_frequency =
+        get_parameter("sync_pulse_out_frequency").as_int();
+    if (sync_pulse_out_frequency > 0) {
+        config.sync_pulse_out_frequency = sync_pulse_out_frequency;
+    }
+
     return config;
 }
 
@@ -690,7 +725,7 @@ void OusterSensor::create_publishers() {
     bool use_system_default_qos =
         get_parameter("use_system_default_qos").as_bool();
     rclcpp::QoS system_default_qos = rclcpp::SystemDefaultsQoS();
-    rclcpp::QoS sensor_data_qos = rclcpp::SensorDataQoS();
+    rclcpp::QoS sensor_data_qos = rclcpp::SensorDataQoS(rclcpp::KeepLast(1));
     auto selected_qos =
         use_system_default_qos ? system_default_qos : sensor_data_qos;
     lidar_packet_pub =

@@ -68,7 +68,7 @@ class OusterDriver : public OusterSensor {
         bool use_system_default_qos =
             get_parameter("use_system_default_qos").as_bool();
         rclcpp::QoS system_default_qos = rclcpp::SystemDefaultsQoS();
-        rclcpp::QoS sensor_data_qos = rclcpp::SensorDataQoS();
+        rclcpp::QoS sensor_data_qos = rclcpp::SensorDataQoS(rclcpp::KeepLast(1));
         auto selected_qos =
             use_system_default_qos ? system_default_qos : sensor_data_qos;
 
