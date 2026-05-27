@@ -85,11 +85,14 @@ set(ouster_ros_library_deps
   tf2_eigen
 )
 
-ament_target_dependencies(ouster_ros_library
-  ${ouster_ros_library_deps}
-)
-
 target_link_libraries(ouster_ros_library
+  ${rclcpp_TARGETS}
+  ${sensor_msgs_TARGETS}
+  ${geometry_msgs_TARGETS}
+  ${ouster_sensor_msgs_TARGETS}
+  pcl_conversions::pcl_conversions
+  ${tf2_TARGETS}
+  tf2_eigen::tf2_eigen
   # PUBLIC (unsupported)
     ouster_build
     OusterSDK::ouster_sensor
@@ -113,18 +116,22 @@ function(create_ros2_component
       "OUSTER_ROS_BUILDING_DLL"
   )
 
-  ament_target_dependencies(${component_lib_name}
-    rclcpp
-    class_loader
-    rclcpp_components
-    rclcpp_lifecycle
-    std_msgs
-    sensor_msgs
-    geometry_msgs
-    ${additional_dependencies}
-  )
+  set(_component_extra_targets)
+  foreach(dep IN LISTS additional_dependencies)
+    if(DEFINED ${dep}_TARGETS)
+      list(APPEND _component_extra_targets ${${dep}_TARGETS})
+    endif()
+  endforeach()
 
   target_link_libraries(${component_lib_name}
+    ${rclcpp_TARGETS}
+    ${class_loader_TARGETS}
+    ${rclcpp_components_TARGETS}
+    ${rclcpp_lifecycle_TARGETS}
+    ${std_msgs_TARGETS}
+    ${sensor_msgs_TARGETS}
+    ${geometry_msgs_TARGETS}
+    ${_component_extra_targets}
     ouster_ros_library
   )
 
