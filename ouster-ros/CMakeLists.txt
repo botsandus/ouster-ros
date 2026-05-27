@@ -8,7 +8,6 @@ project(ouster_ros)
 
 # ==== Requirements ====
 find_package(ament_cmake REQUIRED)
-find_package(ament_cmake_target_dependencies REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(class_loader REQUIRED)
@@ -213,16 +212,18 @@ if(BUILD_TESTING)
     test/point_transform_test.cpp
     test/point_cloud_compose_test.cpp
   )
-  ament_target_dependencies(${PROJECT_NAME}_test
-    rclcpp
-    ouster_sensor_msgs
-  )
-  target_include_directories(${PROJECT_NAME}_test PUBLIC
-    ${_ouster_ros_INCLUDE_DIRS}
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-  )
-  target_link_libraries(${PROJECT_NAME}_test ouster_ros_library)
+  if(TARGET ${PROJECT_NAME}_test)
+    target_include_directories(${PROJECT_NAME}_test PUBLIC
+      ${_ouster_ros_INCLUDE_DIRS}
+      $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+      $<INSTALL_INTERFACE:include>
+    )
+    target_link_libraries(${PROJECT_NAME}_test
+      ${rclcpp_TARGETS}
+      ${ouster_sensor_msgs_TARGETS}
+      ouster_ros_library
+    )
+  endif()
 endif()
 
 
